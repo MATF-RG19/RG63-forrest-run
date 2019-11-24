@@ -12,8 +12,16 @@ static float lookingAtX = 0;
 static float lookingAtY = 0.5;
 static float lookingAtZ = 0.5;
 
+static float prev_mouse_x = 0;
+static float prev_mouse_y = 0.5;
+
+static int should_handle_mouse_movement = 0;
+static int is_first_mouse_movement_handling = 1;
+
 static void on_reshape(int width, int height);
 static void on_display(void);
+static void on_mouse_movement(int x, int y);
+static void on_keyboard(unsigned char key, int x, int y);
 
 void setColorRGB(int r, int g, int b);
 
@@ -28,6 +36,8 @@ int main(int argc, char **argv)
 
     glutReshapeFunc(on_reshape);
     glutDisplayFunc(on_display);
+    glutPassiveMotionFunc(on_mouse_movement);
+    glutKeyboardFunc(on_keyboard);
 
     glClearColor(1, 1, 1, 0);
     glEnable(GL_DEPTH_TEST);
@@ -72,6 +82,51 @@ static void on_display(void)
 void setColorRGB(int r, int g, int b)
 {
     glColor3f(((float)r) / 255, ((float)g) / 255, ((float)b) / 255);
+}
+
+static void on_mouse_movement(int x, int y)
+{
+    if (should_handle_mouse_movement)
+    {
+        if ((float)window_width - (float)x < (float)window_width / 50) // poslednjih 2% ekrana (desna ivica)
+        {
+            lookingAtX += 80 / ((float)window_width);
+        }
+        if ((float)x < (float)window_width / 50) // poslednjih 2% ekrana (leva ivica)
+        {
+            lookingAtX -= 80 / ((float)window_width);
+        }
+        lookingAtX -= 2 * ((float)prev_mouse_x - (float)x) / ((float)window_width);
+        lookingAtY += 2 * ((float)prev_mouse_y - (float)y) / ((float)window_height);
+    }
+    prev_mouse_x = (float)x;
+    prev_mouse_y = (float)y;
+    glutPostRedisplay();
+}
+
+static void on_keyboard(unsigned char key, int x, int y)
+{
+    switch (key)
+    {
+    case 27:
+        exit(0);
+        break;
+    case 'w':
+        nX += lookingAtX * 0.1f;
+        // TODO dodaj y deo
+        nZ -= 0.1f;
+        break;
+    case 's':
+        nX -= lookingAtX * 0.1f;
+        // TODO dodaj y deo
+        nZ += 0.1f;
+        break;
+    case 'z':
+        should_handle_mouse_movement = 1;
+        break;
+    }
+    // force rerender
+    glutPostRedisplay();
 }
 
 static void on_reshape(int width, int height)
