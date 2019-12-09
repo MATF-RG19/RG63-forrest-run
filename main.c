@@ -92,6 +92,10 @@ static void on_display(void)
         glutSolidCube(0.2);
     glPopMatrix();
 
+    drawTree(0.8, 0, 0.4);
+
+    drawTree(-1, 0, -0.4);
+
     // Grass
     glPushMatrix();
         setMaterialForGrass();
@@ -156,4 +160,76 @@ void setMaterialForRedCube() {
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
     glutPostRedisplay();
+}
+
+void setMaterialForDarkBrownWood() {
+    GLfloat ambient_coeffs[] = { 0.40, 0.26, 0.13, 0.01 };
+    GLfloat diffuse_coeffs[] = { 0.40, 0.26, 0.13, 0.3 };
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
+    glutPostRedisplay();
+}
+
+void setMaterialForChristmasTree() {
+    GLfloat ambient_coeffs[] = { 0, 0.2, 0, 0.1 };
+    GLfloat diffuse_coeffs[] = { 0, 0.2, 0, 0.7 };
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
+    glutPostRedisplay();
+}
+
+void drawTree(float coordX, float coordY, float coordZ)
+{
+    setMaterialForDarkBrownWood();
+    drawCylinder(coordX, coordY, coordZ, 0.04, 1);
+
+    setMaterialForChristmasTree();
+    drawCone(coordX, coordY + 0.3, coordZ, 0.4, 1);
+}
+
+void drawCone(float coordX, float coordY, float coordZ, float radius, float height)
+{
+    GLfloat angle = 0.0;
+    GLfloat angle_stepsize = 0.6;
+
+    glBegin(GL_TRIANGLES);
+    for (angle = 0.0; angle < 360; angle += angle_stepsize)
+    {
+        GLfloat x = radius * cos(angle) + coordX;
+        GLfloat y = radius * sin(angle) + coordZ;
+        GLfloat x1 = radius * cos(angle + angle_stepsize) + coordX;
+        GLfloat y1 = radius * sin(angle + angle_stepsize) + coordZ;
+
+        // Lower 2 vertices
+        glVertex3f(x, coordY, y);
+        glVertex3f(x1, coordY, y1);
+
+        // Upper vertex (the tip of the cone)
+        glVertex3f(coordX, coordY + height, coordZ);
+    }
+    glEnd();
+}
+
+void drawCylinder(float coordX, float coordY, float coordZ, float radius, float height)
+{
+    GLfloat angle = 0.0;
+    GLfloat angle_stepsize = 0.6;
+
+    glBegin(GL_QUAD_STRIP);
+    for (angle = 0.0; angle < 360; angle += angle_stepsize)
+    {
+        GLfloat x = radius * cos(angle) + coordX;
+        GLfloat y = radius * sin(angle) + coordZ;
+        GLfloat x1 = radius * cos(angle + angle_stepsize) + coordX;
+        GLfloat y1 = radius * sin(angle + angle_stepsize) + coordZ;
+
+        // Lower 2 vertices
+        glVertex3f(x, coordY, y);
+        glVertex3f(x1, coordY, y1);
+
+        // Upper 2 vertices
+        glVertex3f(x, height + coordY, y);
+        glVertex3f(x1, height + coordY, y1);
+    }
+    glEnd();
 }
