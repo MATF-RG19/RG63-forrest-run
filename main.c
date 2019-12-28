@@ -2,24 +2,29 @@
 #include <stdlib.h>
 #include <GLUT/glut.h>
 
+float step_s = 0.0f;
+
 static int window_width, window_height;
 
-static float camPosX = 0;
+static float camPosX = 1;
 static float camPosY = 0.5;
 static float camPosZ = 2;
 
-static float camFrontX = 0;
-static float camFrontY = 0.5;
-static float camFrontZ = 1;
+static float kx = 0.999605f;
+static float kz = 0.012737f;
 
-static float camUpX = 0;
-static float camUpY = 1;
-static float camUpZ = 0;
+#define PI 3.14159
+#define MOUSE_SENSITIVITY 0.005
 
-GLfloat light_ambient[] = { 0.7, 0.7, 0.7, 0.4 };
-GLfloat light_diffuse[] = { 0.4, 0.9, 0.4, 0.4 };
-GLfloat light_specular[] = { 0.2, 0.9, 0.2, 0.2 };
-GLfloat light_position[] = { 0, 0, 1, 0 };
+static int SHOULD_HANDLE_MOUSE_MOVEMENT = 0;
+
+static float x_angle = 0;
+static float y_angle = 0;
+
+GLfloat light_ambient[] = {0.7, 0.7, 0.7, 0.4};
+GLfloat light_diffuse[] = {0.4, 0.9, 0.4, 0.4};
+GLfloat light_specular[] = {0.2, 0.9, 0.2, 0.2};
+GLfloat light_position[] = {0, 0, 1, 0};
 
 static void on_reshape(int width, int height);
 static void on_display(void);
@@ -29,6 +34,7 @@ void drawCylinder(float coordX, float coordY, float coordZ, float radius, float 
 void drawCone(float coordX, float coordY, float coordZ, float radius, float height);
 void setMaterialForGrass();
 void setMaterialForRedCube();
+static void on_mouse_motion(int x, int y);
 
 int main(int argc, char **argv)
 {
@@ -42,8 +48,9 @@ int main(int argc, char **argv)
     glutReshapeFunc(on_reshape);
     glutDisplayFunc(on_display);
     glutKeyboardFunc(on_keyboard);
+    glutPassiveMotionFunc(on_mouse_motion);
 
-    glClearColor(0.098f,0.098f,0.43f, 0);
+    glClearColor(0.098f, 0.098f, 0.43f, 0);
     glEnable(GL_DEPTH_TEST);
 
     // Light
@@ -53,9 +60,39 @@ int main(int argc, char **argv)
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 
-
     glutMainLoop();
     return 0;
+}
+
+static void on_mouse_motion(int x, int y)
+{
+    if (!SHOULD_HANDLE_MOUSE_MOVEMENT)
+    {
+        return;
+    }
+
+    x -= window_width / 2;
+    y -= window_height / 2;
+
+    x_angle += y * MOUSE_SENSITIVITY;
+    y_angle += x * MOUSE_SENSITIVITY;
+
+    if (x_angle >= 180)
+    {
+        x_angle = 180;
+    }
+
+    if (x_angle <= 0)
+    {
+        x_angle = 0;
+    }
+
+    kx = cos(PI / 180.0f * y_angle) * sin(PI / 180.0f * x_angle);
+    printf("kx %f\n", kx);
+    kz = sin(PI / 180.0f * y_angle) * sin(PI / 180.0f * x_angle);
+    printf("kz %f\n", kz);
+
+    glutPostRedisplay();
 }
 
 static void on_display(void)
@@ -73,34 +110,35 @@ static void on_display(void)
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(
-        camPosX, camPosY, camPosZ, // where's our camera (eye)
-        camFrontX, camFrontY, camFrontZ, // what are we looking at
-        camUpX, camUpY, camUpZ); // what's our up vector
+    gluLookAt(camPosX, camPosY, camPosZ,           // where's our camera (eye)
+              camPosX + kx, camPosY, camPosZ + kz, // what are we looking at
+              0, 1, 0);                            // what's our up vector
 
     // Cube 1
     glPushMatrix();
-        setMaterialForRedCube();
-        glTranslatef(0, 0.15, 0);
-        glutSolidCube(0.3);
+    setMaterialForRedCube();
+    glTranslatef(0, 0.15, 0);
+    glutSolidCube(0.3);
     glPopMatrix();
 
     // Cube 2
     glPushMatrix();
-        setMaterialForRedCube();
-        glTranslatef(0.3, 0.1, -0.3);
-        glutSolidCube(0.2);
+    setMaterialForRedCube();
+    glTranslatef(0.3, 0.1, -0.3);
+    glutSolidCube(0.2);
     glPopMatrix();
 
     drawTree(0.8, 0, 0.4);
 
     drawTree(-1, 0, -0.4);
 
+    drawTree(2.5, 0, 1.25);
+
     // Grass
     glPushMatrix();
-        setMaterialForGrass();
-        glScalef(10, 0.01, 10);
-        glutSolidCube(1);
+    setMaterialForGrass();
+    glScalef(10, 0.01, 10);
+    glutSolidCube(1);
     glPopMatrix();
 
     // Refresh
@@ -109,31 +147,24 @@ static void on_display(void)
 
 static void on_keyboard(unsigned char key, int x, int y)
 {
-    float angle = 0.05f;
     switch (key)
     {
     case 27:
         exit(0);
         break;
+    case 'h':
+        SHOULD_HANDLE_MOUSE_MOVEMENT = 1;
+        break;
     case 'w':
-        camPosZ -= 0.05f;
+        step_s = sqrt(kz * kz + kx * kx);
+        camPosX += kx / step_s * 0.03f; // scale down
+        camPosZ += kz / step_s * 0.03f; // scale down
         break;
     case 's':
-        camPosZ += 0.05f;
-        break;
-    case 'a':
-        camPosX -= 0.05f;
-        camFrontX -= 0.05f;
-        break;
-    case 'd':
-        camPosX += 0.05f;
-        camFrontX += 0.05f;
-        break;
-    case '.':
-        camFrontX -= sin(angle);
-        break;
-    case '/':
-        camFrontX += sin(angle);
+        step_s = sqrt(kz * kz + kx * kx);
+        camPosX -= kx / step_s * 0.03f; // scale down
+        camPosZ -= kz / step_s * 0.03f; // scale down
+    default:
         break;
     }
     // force rerender
@@ -146,33 +177,37 @@ static void on_reshape(int width, int height)
     window_height = height;
 }
 
-void setMaterialForGrass() {
-    GLfloat ambient_coeffs[] = { 0.05, 0.4, 0.05, 0.2 };
-    GLfloat diffuse_coeffs[] = { 0.1, 0.9, 0.1, 0.9 };
+void setMaterialForGrass()
+{
+    GLfloat ambient_coeffs[] = {0.05, 0.4, 0.05, 0.2};
+    GLfloat diffuse_coeffs[] = {0.1, 0.9, 0.1, 0.9};
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
     glutPostRedisplay();
 }
 
-void setMaterialForRedCube() {
-    GLfloat ambient_coeffs[] = { 0.9, 0.05, 0.05, 0.2 };
-    GLfloat diffuse_coeffs[] = { 0.9, 0.05, 0.05, 0.9 };
+void setMaterialForRedCube()
+{
+    GLfloat ambient_coeffs[] = {0.9, 0.05, 0.05, 0.2};
+    GLfloat diffuse_coeffs[] = {0.9, 0.05, 0.05, 0.9};
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
     glutPostRedisplay();
 }
 
-void setMaterialForDarkBrownWood() {
-    GLfloat ambient_coeffs[] = { 0.40, 0.26, 0.13, 0.01 };
-    GLfloat diffuse_coeffs[] = { 0.40, 0.26, 0.13, 0.3 };
+void setMaterialForDarkBrownWood()
+{
+    GLfloat ambient_coeffs[] = {0.40, 0.26, 0.13, 0.01};
+    GLfloat diffuse_coeffs[] = {0.40, 0.26, 0.13, 0.3};
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
     glutPostRedisplay();
 }
 
-void setMaterialForChristmasTree() {
-    GLfloat ambient_coeffs[] = { 0, 0.2, 0, 0.1 };
-    GLfloat diffuse_coeffs[] = { 0, 0.2, 0, 0.7 };
+void setMaterialForChristmasTree()
+{
+    GLfloat ambient_coeffs[] = {0, 0.2, 0, 0.1};
+    GLfloat diffuse_coeffs[] = {0, 0.2, 0, 0.7};
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
     glutPostRedisplay();
