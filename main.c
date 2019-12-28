@@ -1,8 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GLUT/glut.h>
+#include <math.h>
+#include <time.h>
+
+#define GIFT_1_X 3
+#define GIFT_1_Z 3
+
+#define GIFT_2_X 0
+#define GIFT_2_Z 9
 
 float step_s = 0.0f;
+
+int animation_time_1 = 0; // in ms
+int animation_time_2 = 0; // in ms
+
+float scaledX = 0;
+float scaledZ = 0;
 
 static int window_width, window_height;
 
@@ -34,7 +48,10 @@ void drawCylinder(float coordX, float coordY, float coordZ, float radius, float 
 void drawCone(float coordX, float coordY, float coordZ, float radius, float height);
 void setMaterialForGrass();
 void setMaterialForRedCube();
-static void on_mouse_motion(int x, int y);
+void setMaterialForWhiteCube();
+void drawGift(float coordX, float coordY, float coordZ, int animation_param);
+void on_mouse_movement(int x, int y);
+void on_timer_tick(int timer_key);
 
 int main(int argc, char **argv)
 {
@@ -48,7 +65,7 @@ int main(int argc, char **argv)
     glutReshapeFunc(on_reshape);
     glutDisplayFunc(on_display);
     glutKeyboardFunc(on_keyboard);
-    glutPassiveMotionFunc(on_mouse_motion);
+    glutPassiveMotionFunc(on_mouse_movement);
 
     glClearColor(0.098f, 0.098f, 0.43f, 0);
     glEnable(GL_DEPTH_TEST);
@@ -64,7 +81,33 @@ int main(int argc, char **argv)
     return 0;
 }
 
-static void on_mouse_motion(int x, int y)
+void on_timer_tick(int key)
+{
+
+    if (key == 1) {
+        animation_time_1 += 10;
+    }
+     if (key == 2) {
+        animation_time_2 += 10;
+    }
+
+    glutPostRedisplay();
+
+    if (animation_time_1 >= 400)
+    {
+        animation_time_1 = 0;
+        return;
+    }
+    if (animation_time_2 >= 400)
+    {
+        animation_time_2 = 0;
+        return;
+    }
+
+    glutTimerFunc(10, on_timer_tick, key);
+}
+
+void on_mouse_movement(int x, int y)
 {
     if (!SHOULD_HANDLE_MOUSE_MOVEMENT)
     {
@@ -106,7 +149,7 @@ static void on_display(void)
     gluPerspective(
         60,                                  // y-angle
         window_width / (float)window_height, // aspect ratio
-        0.05f, 7);                           // how close and how far do we see
+        0.05f, 15);                          // how close and how far do we see
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -114,19 +157,15 @@ static void on_display(void)
               camPosX + kx, camPosY, camPosZ + kz, // what are we looking at
               0, 1, 0);                            // what's our up vector
 
-    // Cube 1
-    glPushMatrix();
-    setMaterialForRedCube();
-    glTranslatef(0, 0.15, 0);
-    glutSolidCube(0.3);
-    glPopMatrix();
+    drawTree(5, 0, 4);
 
-    // Cube 2
-    glPushMatrix();
-    setMaterialForRedCube();
-    glTranslatef(0.3, 0.1, -0.3);
-    glutSolidCube(0.2);
-    glPopMatrix();
+    drawTree(5.4, 0, 2);
+
+    drawTree(7, 0, 4);
+
+    drawTree(8, 0, 8);
+
+    drawGift(GIFT_1_X, 0, GIFT_1_Z, animation_time_1);
 
     drawTree(0.8, 0, 0.4);
 
@@ -134,10 +173,54 @@ static void on_display(void)
 
     drawTree(2.5, 0, 1.25);
 
+    drawGift(GIFT_2_X, 0, GIFT_2_Z, animation_time_2);
+
+    drawTree(-4, 0, -2.25);
+
+    drawTree(-0.8, 0, -3);
+
+    drawTree(1, 0, -0.4);
+
+    drawTree(-2.5, 0, -1.25);
+
+    drawTree(-9, 0, -6.25);
+
+    drawTree(-2.5, 0, 8.25);
+
+    drawTree(-4, 0, 14);
+
+    drawTree(-0.8, 0, 13);
+
+    drawTree(1, 0, 11);
+
+    drawTree(-2.5, 0, 6);
+
+    drawTree(-9, 0, 2);
+
+    drawTree(2.5, 0, 5.8);
+
+    drawTree(4, 0, 6);
+
+    drawTree(0.8, 0, 2.9);
+
+    drawTree(1, 0, 3);
+
+    drawTree(-2.5, 0, 6);
+
+    drawTree(9, 0, 20);
+
+    drawTree(0, 0, 13);
+
+    drawTree(0, 0, 11);
+
+    drawTree(-2, 0, 7);
+
+    drawTree(-5, 0, 7);
+
     // Grass
     glPushMatrix();
     setMaterialForGrass();
-    glScalef(10, 0.01, 10);
+    glScalef(40, 0.01, 40);
     glutSolidCube(1);
     glPopMatrix();
 
@@ -157,13 +240,29 @@ static void on_keyboard(unsigned char key, int x, int y)
         break;
     case 'w':
         step_s = sqrt(kz * kz + kx * kx);
-        camPosX += kx / step_s * 0.03f; // scale down
-        camPosZ += kz / step_s * 0.03f; // scale down
+        camPosX += kx / step_s * 0.08f; // scale down
+        camPosZ += kz / step_s * 0.08f; // scale down
+        if (camPosX >= GIFT_1_X - 1 && camPosX <= GIFT_1_X + 1 && camPosZ >= GIFT_1_Z - 1 && camPosZ <= GIFT_1_Z + 1)
+        {
+            glutTimerFunc(10, on_timer_tick, 1);
+        }
+        if (camPosX >= GIFT_2_X - 1 && camPosX <= GIFT_2_X + 1 && camPosZ >= GIFT_2_Z - 1 && camPosZ <= GIFT_2_Z + 1)
+        {
+            glutTimerFunc(10, on_timer_tick, 2);
+        }
         break;
     case 's':
         step_s = sqrt(kz * kz + kx * kx);
-        camPosX -= kx / step_s * 0.03f; // scale down
-        camPosZ -= kz / step_s * 0.03f; // scale down
+        camPosX -= kx / step_s * 0.06f; // scale down
+        camPosZ -= kz / step_s * 0.06f; // scale down
+        if (camPosX >= GIFT_1_X - 1 && camPosX <= GIFT_1_X + 1 && camPosZ >= GIFT_1_Z - 1 && camPosZ <= GIFT_1_Z + 1)
+        {
+            glutTimerFunc(10, on_timer_tick, 1);
+        }
+        if (camPosX >= GIFT_2_X - 1 && camPosX <= GIFT_2_X + 1 && camPosZ >= GIFT_2_Z - 1 && camPosZ <= GIFT_2_Z + 1)
+        {
+            glutTimerFunc(10, on_timer_tick, 2);
+        }
     default:
         break;
     }
@@ -175,6 +274,38 @@ static void on_reshape(int width, int height)
 {
     window_width = width;
     window_height = height;
+}
+
+void drawGift(float coordX, float coordY, float coordZ, int animation_param)
+{
+
+    glPushMatrix();
+    glTranslatef(0, (float)animation_param / 100.0f, 0);
+    glTranslatef(coordX, coordY, coordZ);
+    glTranslatef(0, 0.15f, 0);
+    glRotatef(animation_param, 0, 1, 0);
+
+    // Red part
+    glPushMatrix();
+    setMaterialForRedCube();
+    glutSolidCube(0.3);
+    glPopMatrix();
+
+    // White part 1
+    glPushMatrix();
+    setMaterialForWhiteCube();
+    glScalef(0.2f, 1.02f, 1.02f);
+    glutSolidCube(0.3);
+    glPopMatrix();
+
+    // White part 2
+    glPushMatrix();
+    setMaterialForWhiteCube();
+    glScalef(1.02f, 1.02f, 0.2f);
+    glutSolidCube(0.3);
+    glPopMatrix();
+
+    glPopMatrix();
 }
 
 void setMaterialForGrass()
@@ -190,6 +321,15 @@ void setMaterialForRedCube()
 {
     GLfloat ambient_coeffs[] = {0.9, 0.05, 0.05, 0.2};
     GLfloat diffuse_coeffs[] = {0.9, 0.05, 0.05, 0.9};
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
+    glutPostRedisplay();
+}
+
+void setMaterialForWhiteCube()
+{
+    GLfloat ambient_coeffs[] = {1, 1, 1, 0.2};
+    GLfloat diffuse_coeffs[] = {1, 1, 1, 0.9};
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient_coeffs);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse_coeffs);
     glutPostRedisplay();
