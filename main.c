@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <GLUT/glut.h>
+#ifdef __APPLE__
+    #define GL_SILENCE_DEPRECATION
+    #include <GLUT/glut.h>
+#endif
+#ifdef __linux__
+    #include <GL/glut.h>
+#endif
 #include <math.h>
 #include <time.h>
 #define GIFT_1_X 3
